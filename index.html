@@ -553,7 +553,7 @@ function renderExam(){
 }
 
 function choose(orig){
-  exam.answers[exam.cur] = exam.answers[exam.cur]===orig ? null : orig;
+  exam.answers[exam.cur] = orig;   // always select; a repeated click must never deselect
   render();
 }
 function nav(d){
