@@ -449,12 +449,30 @@ function renderStart(){
       <button class="pbtn invert startbtn" onclick="startExam()">${t.startExam}</button>
     </div>
     <div class="footer justified">
-      <span style='font-size:12px;color:var(--dark-grey)'>v5</span>
+      <span style='font-size:12px;color:var(--dark-grey)'>v6</span>
       <button class="pbtn" onclick="view='lang';render()">${IC.lang} ${lang==='en'?'English':'Italiano'}</button>
     </div>`;
 }
 
+function saveExam(){
+  if(!exam) return;
+  try{ localStorage.setItem('b121exam', JSON.stringify({qs:exam.qs, answers:exam.answers, marked:exam.marked, cur:exam.cur, total:exam.total, left:exam.left, savedAt:Date.now()})); }catch(e){}
+}
+function clearSaved(){ try{ localStorage.removeItem('b121exam'); }catch(e){} }
+function resumeExam(){
+  try{
+    const s=JSON.parse(localStorage.getItem('b121exam')||'null');
+    if(!s || !Array.isArray(s.qs) || s.qs.length!==EXAM_N || !Array.isArray(s.answers)) return false;
+    const elapsed=Math.floor((Date.now()-(s.savedAt||Date.now()))/1000);
+    exam={qs:s.qs, answers:s.answers, marked:s.marked, cur:s.cur||0, total:s.total, left:Math.max(0, s.left-elapsed), timerId:null};
+    view='exam';
+    if(exam.left<=0){ exam.left=0; render(); finish(); return true; }
+    exam.timerId=setInterval(tick, 1000);
+    return true;
+  }catch(e){ return false; }
+}
 function startExam(){
+  clearSaved();
   const picks = shuffled(POOL.map((_,i)=>i)).slice(0,EXAM_N);
   exam = {
     qs: picks.map(p=>({p, perm: shuffled([0,1,2,3])})),
@@ -478,6 +496,7 @@ function tick(){
     showDialog(`<p>${T().timeUp}</p>`, [[T().ok, ()=>{closeDialog(); finish();}, true]]);
     return;
   }
+  saveExam();
   const el=$('timelabel'), fill=$('timefill');
   if(el){ el.innerHTML = timeHTML(); el.classList.toggle('critical', exam.left<=CRITICAL_S); }
   if(fill){ fill.style.width = (exam.left/exam.total*100)+'%'; }
@@ -556,13 +575,16 @@ function renderExam(){
 
 function choose(orig){
   exam.answers[exam.cur] = orig;   // always select; a repeated click must never deselect
+  saveExam();
   render();
 }
 function nav(d){
   exam.cur=Math.min(EXAM_N-1,Math.max(0,exam.cur+d));
+  saveExam();
   render();
 }
-function toggleMark(){ exam.marked[exam.cur]=!exam.marked[exam.cur]; render(); }
+function toggleMark(){ exam.marked[exam.cur]=!exam.marked[exam.cur]; saveExam(); render(); }
+function gotoQ(i){ exam.cur=i; view='exam'; saveExam(); render(); }
 function switchLangInline(){ lang = lang==='en'?'it':'en'; localStorage.setItem('b121lang2',lang); render(); }
 
 function renderOverview(){
@@ -584,7 +606,7 @@ function renderOverview(){
         ${e.qs.map((_,i)=>`
           <div class="list-item">
             <span class="flag ${e.marked[i]?'':'hiddenflag'}">${IC.flag}</span>
-            <button class="pbtn ovbtn ${e.answers[i]!==null?'invert answered':''}" onclick="exam.cur=${i};view='exam';render()">
+            <button class="pbtn ovbtn ${e.answers[i]!==null?'invert answered':''}" onclick="gotoQ(${i})">
               <span class="button-text">${i+1}</span>
             </button>
           </div>`).join('')}
@@ -621,6 +643,7 @@ function askFinish(){
 
 function finish(){
   clearInterval(exam.timerId);
+  clearSaved();
   exam.usedS = exam.total - exam.left;
   view='result'; render();
   window.scrollTo(0,0);
@@ -682,6 +705,7 @@ function render(){
   else if(view==='overview') renderOverview();
   else if(view==='result') renderResult();
 }
+if(lang) resumeExam();
 render();
 </script>
 </body>
