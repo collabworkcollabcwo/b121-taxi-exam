@@ -262,6 +262,7 @@ const UI = {
     examResult:'Exam result:', passed:'Passed', failed:'Failed',
     score:'Score:', mistakes:'Mistakes:',
     newExam:'New exam', review:'Review',
+    legend:'<span style="color:var(--test-accepted-color); font-weight:700;">Green ring</span> = the correct answer (answer key) &nbsp;·&nbsp; <span style="color:var(--error-color); font-weight:700;">Red ring</span> = your wrong answer &nbsp;·&nbsp; <b>Checked box</b> = what you selected. Unanswered questions count as mistakes.',
     help:'Help',
     helpTexts:[
       ['Questions overview','Here you get an overall view of your exam.'],
@@ -296,6 +297,7 @@ const UI = {
     examResult:'Risultato dell\'esame:', passed:'Superato', failed:'Non superato',
     score:'Punteggio:', mistakes:'Punteggio degli errori:',
     newExam:'Nuovo esame', review:'Revisione',
+    legend:'<span style="color:var(--test-accepted-color); font-weight:700;">Anello verde</span> = la risposta corretta (chiave delle soluzioni) &nbsp;·&nbsp; <span style="color:var(--error-color); font-weight:700;">Anello rosso</span> = la tua risposta sbagliata &nbsp;·&nbsp; <b>Casella spuntata</b> = ciò che hai selezionato. Le domande senza risposta contano come errori.',
     help:'Aiuto',
     helpTexts:[
       ['Panoramica delle domande','Tramite questo tasto otterrete una panoramica su tutte le domande d\'esame.'],
@@ -447,7 +449,7 @@ function renderStart(){
       <button class="pbtn invert startbtn" onclick="startExam()">${t.startExam}</button>
     </div>
     <div class="footer justified">
-      <span style='font-size:12px;color:var(--dark-grey)'>v4</span>
+      <span style='font-size:12px;color:var(--dark-grey)'>v5</span>
       <button class="pbtn" onclick="view='lang';render()">${IC.lang} ${lang==='en'?'English':'Italiano'}</button>
     </div>`;
 }
@@ -647,7 +649,7 @@ function renderResult(){
       <button class="pbtn invert" style="margin-top:26px;" onclick="startExam()">${t.newExam}</button>
 
       <div class="reviewwrap">
-        <h2>${t.review}</h2>
+        <h2>${t.review}</h2><div style="font-size:13px; color:var(--night-rider); margin:8px 0 2px; line-height:1.6;">${t.legend}</div>
         ${e.qs.map((qq,i)=>{
           const q=POOL[qq.p][lang], user=e.answers[i];
           return `<div>
