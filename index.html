@@ -150,6 +150,12 @@
   }
   .correct .ring{border-color:var(--test-accepted-color);}
   .incorrect .ring{border-color:var(--error-color);}
+  @keyframes ringPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.18);opacity:1}100%{transform:scale(1);opacity:1}}
+  .ring.anim{animation:ringPop .45s cubic-bezier(.2,.8,.3,1.25);}
+  @keyframes flashGood{0%{background:rgba(40,155,124,.28)}100%{background:transparent}}
+  @keyframes flashBad{0%{background:rgba(215,59,64,.26)}40%{transform:translateX(-4px)}60%{transform:translateX(4px)}100%{background:transparent;transform:translateX(0)}}
+  .answer.flashgood{animation:flashGood .9s ease-out;}
+  .answer.flashbad{animation:flashBad .6s ease-out;}
   .ring .pcheck{margin-right:8px;}
   /* header widgets */
   .hstack{display:flex; flex-direction:column; font-size:13px; line-height:1.5;}
@@ -481,7 +487,7 @@ function renderStart(){
       <button class="pbtn invert startbtn" onclick="startExam()">${t.startExam}</button>
     </div>
     <div class="footer justified">
-      <span style='font-size:12px;color:var(--dark-grey)'>v8</span>
+      <span style='font-size:12px;color:var(--dark-grey)'>v9</span>
       <button class="pbtn" onclick="view='lang';render()">${IC.lang} ${lang==='en'?'English':'Italiano'}</button>
     </div>`;
 }
@@ -581,9 +587,20 @@ function renderExam(){
               </div>
               <div class="contentRight">
                 ${qq.perm.map(orig=>{
+                  const answered = e.answers[e.cur]!==null;
                   const sel = e.answers[e.cur]===orig;
-                  return `<div class="answer ${sel?'selected checked':''}" onclick="choose(${orig})">
-                    <span class="pcheck"></span>
+                  if(!answered){
+                    return `<div class="answer" onclick="choose(${orig})">
+                      <span class="pcheck"></span>
+                      <span class="atext">${esc(q.a[orig])}</span>
+                    </div>`;
+                  }
+                  const isC = orig===0;
+                  let cls='answer'; if(sel) cls+=' checked selected';
+                  if(sel && e.justAnswered) cls += isC ? ' flashgood' : ' flashbad';
+                  let ring=''; if(isC) ring='correct'; else if(sel) ring='incorrect';
+                  return `<div class="${cls}" style="cursor:default">
+                    <span class="${ring}"><span class="ring${ring&&e.justAnswered?' anim':''}"><span class="pcheck"></span></span></span>
                     <span class="atext">${esc(q.a[orig])}</span>
                   </div>`;
                 }).join('')}
@@ -606,9 +623,12 @@ function renderExam(){
 }
 
 function choose(orig){
-  exam.answers[exam.cur] = orig;   // always select; a repeated click must never deselect
+  if(exam.answers[exam.cur]!==null) return;   // locked after the first answer (instant feedback)
+  exam.answers[exam.cur] = orig;
+  exam.justAnswered = true;
   saveExam();
   render();
+  exam.justAnswered = false;
 }
 function nav(d){
   exam.cur=Math.min(EXAM_N-1,Math.max(0,exam.cur+d));
